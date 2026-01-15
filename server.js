@@ -17,3 +17,26 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Start server
 app.listen(5000, () => console.log("Server running on port 5000"));
+
+
+//create admin
+
+app.get("/create-admin", async (req, res) => {
+  const bcrypt = require("bcryptjs");
+  const mongoose = require("mongoose");
+
+  const UserSchema = new mongoose.Schema({
+    email: String,
+    password: String,
+  });
+
+  const User = mongoose.model("User", UserSchema);
+
+  const hashed = await bcrypt.hash("admin123", 10);
+  await User.create({
+    email: "marketing@mypayship.com",
+    password: hashed
+  });
+
+  res.send("Admin created successfully");
+});
