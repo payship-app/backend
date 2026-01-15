@@ -1,69 +1,81 @@
+// Load environment variables
+require("dotenv").config();
+
+// Imports
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 
-
-
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-
+// Create Express app
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // parse JSON
 
+// ------------------------
 // Test route
+// ------------------------
 app.get("/", (req, res) => res.send("Blog backend running"));
 
+// ------------------------
 // Connect to MongoDB
+// ------------------------
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Database connected"))
   .catch(err => console.error("❌ Database connection error:", err));
 
-  //login route
+// ------------------------
+// Login route
+// ------------------------
 app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(401).json({ message: "Invalid credentials" });
+    // Compare password
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign(
-    { userId: user._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "2h" }
-  );
+    // Generate JWT
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "2h" });
 
-  res.json({ token });
+    res.json({ token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-
-// Start server
-app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-//create admin
-
+// ------------------------
+// Create admin (ONE TIME ONLY)
+// ------------------------
 app.get("/create-admin", async (req, res) => {
-  const bcrypt = require("bcryptjs");
-  const mongoose = require("mongoose");
+  try {
+    // Check if admin already exists
+    const existing = await User.findOne({ email: "marketing@mypayship.com" });
+    if (existing) return res.send("Admin already exists");
 
-  const UserSchema = new mongoose.Schema({
-    email: String,
-    password: String,
-  });
+    // Hash password and create admin
+    const hashed = await bcrypt.hash("admin123", 10);
+    await User.create({
+      email: "marketing@mypayship.com",
+      password: hashed
+    });
 
-  const User = mongoose.model("User", UserSchema);
-
-  const hashed = await bcrypt.hash("admin123", 10);
-  await User.create({
-    email: "marketing@mypayship.com",
-    password: hashed
-  });
-
-  res.send("Admin created successfully");
+    res.send("Admin created successfully");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
+// ------------------------
+// Start server
+// ------------------------
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
