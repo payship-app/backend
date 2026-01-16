@@ -8,181 +8,189 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+
+// Models
 const User = require("./models/User");
 const Blog = require("./models/Blog");
-const upload = require("./multer"); // multer configured for Cloudinary
 
+// Multer (Cloudinary)
+const upload = require("./multer");
 
-// Create Express app
+// App
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-const path = require("path");
 // Serve frontend files
 app.use(express.static(path.join(__dirname, "public")));
 
 // ------------------------
+// AUTH MIDDLEWARE
+// ------------------------
+function auth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header) return res.status(401).json({ message: "No token provided" });
+
+  const token = header.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+}
+
+// ------------------------
 // Test route
 // ------------------------
-app.get("/", (req, res) => res.send("Blog backend running"));
+app.get("/", (req, res) => {
+  res.send("✅ Blog backend running");
+});
 
 // ------------------------
-// Connect to MongoDB
+// MongoDB connection
 // ------------------------
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Database connected"))
-  .catch(err => console.error("❌ Database connection error:", err));
+  .catch(err => console.error("❌ Database error:", err));
 
 // ------------------------
-// Login route
+// LOGIN
 // ------------------------
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Compare password
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Generate JWT
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "2h" });
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
 
     res.json({ token });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // ------------------------
-// Create admin (ONE TIME ONLY)
+// CREATE ADMIN (RUN ONCE)
 // ------------------------
 app.get("/create-admin", async (req, res) => {
   try {
-    // Check if admin already exists
-    const existing = await User.findOne({ email: "marketing@mypayship.com" });
-    if (existing) return res.send("Admin already exists");
+    const exists = await User.findOne({ email: "marketing@mypayship.com" });
+    if (exists) return res.send("Admin already exists");
 
-    // Hash password and create admin
     const hashed = await bcrypt.hash("admin123", 10);
+
     await User.create({
       email: "marketing@mypayship.com",
       password: hashed
     });
 
-    res.send("Admin created successfully");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
+    res.send("✅ Admin created");
+  } catch {
+    res.status(500).send("Error creating admin");
   }
 });
 
 // ------------------------
-// Create blog post (Cloudinary)
+// CREATE POST (ADMIN)
 // ------------------------
-app.post("/api/create-post", upload.single("image"), async (req, res) => {
-  try {
-    const { title, content } = req.body;
+app.post(
+  "/api/create-post",
+  auth,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const { title, content } = req.body;
+      if (!title || !content) {
+        return res.status(400).json({ message: "Missing fields" });
+      }
 
-    if (!title || !content) {
-      return res.status(400).json({ message: "Title and content are required" });
+      const imageUrl = req.file ? req.file.path : "";
+
+      const post = await Blog.create({
+        title,
+        content,
+        imageUrl
+      });
+
+      res.json({ message: "Post created", post });
+    } catch {
+      res.status(500).json({ message: "Create failed" });
     }
-
-    // Cloudinary stores uploaded file URL in req.file.path
-    const imageUrl = req.file ? req.file.path : "";
-
-    const post = await Blog.create({
-      title,
-      content,
-      imageUrl
-    });
-
-    res.json({ message: "Post created successfully", post });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
   }
-});
-
-// Public route to get all blog posts
-app.get("/api/posts", async (req, res) => {
-  try {
-    const posts = await Blog.find().sort({ createdAt: -1 });
-    res.json(posts);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
+);
 
 // ------------------------
-// Get all blog posts
+// GET ALL POSTS (PUBLIC)
 // ------------------------
 app.get("/api/posts", async (req, res) => {
   try {
     const posts = await Blog.find().sort({ createdAt: -1 });
     res.json(posts);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch posts" });
+  } catch {
+    res.status(500).json({ message: "Fetch failed" });
   }
 });
 
 // ------------------------
-// Get single blog post
+// GET SINGLE POST (PUBLIC)
 // ------------------------
 app.get("/api/posts/:id", async (req, res) => {
   try {
     const post = await Blog.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Not found" });
     res.json(post);
-  } catch (err) {
-    res.status(404).json({ message: "Post not found" });
+  } catch {
+    res.status(404).json({ message: "Invalid ID" });
   }
 });
 
 // ------------------------
-// Delete blog post
+// UPDATE POST (ADMIN)
 // ------------------------
-app.delete("/api/posts/:id", async (req, res) => {
-  try {
-    await Blog.findByIdAndDelete(req.params.id);
-    res.json({ message: "Post deleted" });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to delete Post" });
-  }
-});
-
-// Update blog post (admin)
 app.put("/api/posts/:id", auth, async (req, res) => {
   try {
     const { title, content } = req.body;
-    const post = await Blog.findByIdAndUpdate(
+
+    const updated = await Blog.findByIdAndUpdate(
       req.params.id,
       { title, content },
       { new: true }
     );
-    res.json(post);
-  } catch (err) {
+
+    res.json(updated);
+  } catch {
     res.status(500).json({ message: "Update failed" });
   }
 });
 
 // ------------------------
-// Start server
+// DELETE POST (ADMIN)
+// ------------------------
+app.delete("/api/posts/:id", auth, async (req, res) => {
+  try {
+    await Blog.findByIdAndDelete(req.params.id);
+    res.json({ message: "Post deleted" });
+  } catch {
+    res.status(500).json({ message: "Delete failed" });
+  }
+});
+
+// ------------------------
+// START SERVER
 // ------------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
-
-
-
-
-
-
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
