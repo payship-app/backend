@@ -122,11 +122,22 @@ app.get("/api/posts", async (req, res) => {
 });
 
 
+// Delete blog post
+app.delete("/api/posts/:id", async (req, res) => {
+  try {
+    await Blog.findByIdAndDelete(req.params.id);
+    res.json({ message: "Post deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete post" });
+  }
+});
+
 // ------------------------
 // Start server
 // ------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
