@@ -8,6 +8,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
+const Blog = require("./models/Blog");
+const upload = require("./multer"); // multer configured for Cloudinary
 
 // Create Express app
 const app = express();
@@ -75,45 +77,34 @@ app.get("/create-admin", async (req, res) => {
 });
 
 // ------------------------
+// Create blog post (Cloudinary)
+// ------------------------
+app.post("/api/create-post", upload.single("image"), async (req, res) => {
+  try {
+    const { title, content } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({ message: "Title and content are required" });
+    }
+
+    // Cloudinary stores uploaded file URL in req.file.path
+    const imageUrl = req.file ? req.file.path : "";
+
+    const post = await Blog.create({
+      title,
+      content,
+      imageUrl
+    });
+
+    res.json({ message: "Post created successfully", post });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ------------------------
 // Start server
 // ------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
-const multer = require("multer"); // for image uploads
-const path = require("path");
-const Blog = require("./models/Blog");
-
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"), // folder for images
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-});
-const upload = multer({ storage });
-
-// Create uploads folder if not exists
-const fs = require("fs");
-if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-
-// Route to create blog post
-app.post("/api/create-post", upload.single("image"), async (req, res) => {
-  try {
-    const { title, content } = req.body;
-    let imageUrl = "";
-
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
-    }
-
-    const post = await Blog.create({ title, content, imageUrl });
-    res.json({ message: "Post created successfully", post });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-// Serve uploaded images
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
