@@ -158,12 +158,27 @@ app.delete("/api/posts/:id", async (req, res) => {
   }
 });
 
+// Update blog post (admin)
+app.put("/api/posts/:id", auth, async (req, res) => {
+  try {
+    const { title, content } = req.body;
+    const post = await Blog.findByIdAndUpdate(
+      req.params.id,
+      { title, content },
+      { new: true }
+    );
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ message: "Update failed" });
+  }
+});
 
 // ------------------------
 // Start server
 // ------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
