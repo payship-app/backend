@@ -15,7 +15,8 @@ const upload = require("./multer"); // multer configured for Cloudinary
 // Create Express app
 const app = express();
 app.use(cors());
-app.use(express.json()); // parse JSON
+// Serve frontend files
+app.use(express.static(path.join(__dirname, "public")));
 
 // ------------------------
 // Test route
@@ -121,6 +122,7 @@ app.get("/api/posts", async (req, res) => {
 // ------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
