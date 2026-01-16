@@ -14,6 +14,11 @@
 
 <section class="posts" id="posts"></section>
 
+  <div style="text-align:center">
+  <button onclick="loadPage(-1)">Previous</button>
+  <button onclick="loadPage(1)">Next</button>
+</div>
+
 <script>
 fetch("/api/posts")
   .then(res => res.json())
@@ -37,3 +42,4 @@ fetch("/api/posts")
 
 </body>
 </html>
+
