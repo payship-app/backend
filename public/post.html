@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Blog Post</title>
+  <link rel="stylesheet" href="post.css">
+</head>
+<body>
+
+<div class="container" id="post"></div>
+
+<section class="next">
+  <h3>Read Next</h3>
+  <div id="nextPosts"></div>
+</section>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+fetch(`/api/posts/${id}`)
+  .then(res => res.json())
+  .then(post => {
+    document.getElementById("post").innerHTML = `
+      <img src="${post.imageUrl}" />
+      <h1>${post.title}</h1>
+      <span>${timeAgo(post.createdAt)}</span>
+      <p>${post.content}</p>
+    `;
+  });
+
+fetch("/api/posts")
+  .then(res => res.json())
+  .then(posts => {
+    posts.slice(0, 3).forEach(p => {
+      document.getElementById("nextPosts").innerHTML += `
+        <a href="post.html?id=${p._id}">${p.title}</a><br>
+      `;
+    });
+  });
+
+function timeAgo(date) {
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  const days = Math.floor(seconds / 86400);
+  return days > 0 ? `${days} days ago` : "Today";
+}
+</script>
+
+</body>
+</html>
