@@ -28,7 +28,7 @@ const postsContainer = document.getElementById("posts");
 
 // Load posts for a page
 function loadPosts() {
-  fetch(`/api/posts?page=${currentPage}`)
+  fetch("https://backend-ob2l.onrender.com/api/posts")
     .then(res => res.json())
     .then(posts => {
       postsContainer.innerHTML = "";
@@ -71,3 +71,4 @@ loadPosts();
 
 </body>
 </html>
+
