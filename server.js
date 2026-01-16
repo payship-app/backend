@@ -122,21 +122,49 @@ app.get("/api/posts", async (req, res) => {
 });
 
 
+// ------------------------
+// Get all blog posts
+// ------------------------
+app.get("/api/posts", async (req, res) => {
+  try {
+    const posts = await Blog.find().sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch posts" });
+  }
+});
+
+// ------------------------
+// Get single blog post
+// ------------------------
+app.get("/api/posts/:id", async (req, res) => {
+  try {
+    const post = await Blog.findById(req.params.id);
+    res.json(post);
+  } catch (err) {
+    res.status(404).json({ message: "Post not found" });
+  }
+});
+
+// ------------------------
 // Delete blog post
+// ------------------------
 app.delete("/api/posts/:id", async (req, res) => {
   try {
     await Blog.findByIdAndDelete(req.params.id);
-    res.json({ message: "Post deleted successfully" });
+    res.json({ message: "Post deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete post" });
+    res.status(500).json({ message: "Failed to delete Post" });
   }
 });
+
 
 // ------------------------
 // Start server
 // ------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
