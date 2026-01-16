@@ -105,9 +105,22 @@ app.post("/api/create-post", upload.single("image"), async (req, res) => {
   }
 });
 
+// Public route to get all blog posts
+app.get("/api/posts", async (req, res) => {
+  try {
+    const posts = await Blog.find().sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 // ------------------------
 // Start server
 // ------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
