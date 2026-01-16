@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Blog Post - MyPayShip</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      padding: 50px 20px;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    h2 { text-align: center; color: #6c63ff; margin-bottom: 20px; }
+    input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; }
+    input[type="file"] { padding: 5px; }
+    button { width: 100%; padding: 12px; background: #6c63ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 18px; }
+    button:hover { background: #574fd6; }
+    .success { color: green; text-align: center; margin-bottom: 15px; }
+    .error { color: red; text-align: center; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Create Blog Post</h2>
+
+    <p class="success" id="success"></p>
+    <p class="error" id="error"></p>
+
+    <form id="postForm" enctype="multipart/form-data">
+      <input type="text" id="title" placeholder="Post Title" required />
+      <textarea id="content" placeholder="Post Content" rows="6" required></textarea>
+      <input type="file" id="image" accept="image/*" />
+      <button type="submit">Create Post</button>
+    </form>
+  </div>
+
+  <script>
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must login first");
+      window.location.href = "blog-login.html";
+    }
+
+    const form = document.getElementById("postForm");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      document.getElementById("success").innerText = "";
+      document.getElementById("error").innerText = "";
+
+      const title = document.getElementById("title").value;
+      const content = document.getElementById("content").value;
+      const image = document.getElementById("image").files[0];
+
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      if (image) formData.append("image", image);
+
+      try {
+        const res = await fetch("https://backend-ob2l.onrender.com/api/create-post", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` },
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || "Post creation failed");
+
+        document.getElementById("success").innerText = "Post created successfully!";
+        form.reset();
+      } catch (err) {
+        document.getElementById("error").innerText = err.message;
+      }
+    });
+  </script>
+
+</body>
+</html>

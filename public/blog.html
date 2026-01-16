@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyPayShip Blog</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    header { background: #6c63ff; color: #fff; padding: 20px; text-align: center; }
+    .posts { display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; }
+    .post-card {
+      background: #fff;
+      width: 300px;
+      margin: 15px;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .post-card img { width: 100%; height: auto; }
+    .post-content { padding: 15px; }
+    .post-content h3 { margin-bottom: 10px; color: #6c63ff; }
+    .post-content p { color: #333; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>MyPayShip Blog</h1>
+  </header>
+
+  <div class="posts" id="posts"></div>
+
+  <script>
+    async function loadPosts() {
+      try {
+        const res = await fetch("https://backend-ob2l.onrender.com/api/posts");
+        const posts = await res.json();
+
+        const container = document.getElementById("posts");
+        container.innerHTML = "";
+
+        posts.forEach(post => {
+          const div = document.createElement("div");
+          div.className = "post-card";
+          div.innerHTML = `
+            ${post.imageUrl ? `<img src="${post.imageUrl}" alt="Post Image" />` : ""}
+            <div class="post-content">
+              <h3>${post.title}</h3>
+              <p>${post.content}</p>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("posts").innerText = "Failed to load posts";
+      }
+    }
+
+    loadPosts();
+  </script>
+
+</body>
+</html>
