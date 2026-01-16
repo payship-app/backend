@@ -7,39 +7,67 @@
 </head>
 <body>
 
+<!-- HERO SECTION -->
 <section class="hero">
   <h1>Welcome to Our Finance Insights Blog</h1>
   <p>Latest insights on payments, fintech, and global commerce.</p>
 </section>
 
+<!-- POSTS GRID -->
 <section class="posts" id="posts"></section>
 
-  <div style="text-align:center">
-  <button onclick="loadPage(-1)">Previous</button>
-  <button onclick="loadPage(1)">Next</button>
+<!-- PAGINATION -->
+<div class="pagination">
+  <button onclick="changePage(-1)">Previous</button>
+  <button onclick="changePage(1)">Next</button>
 </div>
 
 <script>
-fetch("/api/posts")
-  .then(res => res.json())
-  .then(posts => {
-    const container = document.getElementById("posts");
-    posts.forEach(post => {
-      container.innerHTML += `
-        <div class="card">
-          <img src="${post.imageUrl}" />
+let currentPage = 1;
+const postsContainer = document.getElementById("posts");
+
+// Load posts for a page
+function loadPosts() {
+  fetch(`/api/posts?page=${currentPage}`)
+    .then(res => res.json())
+    .then(posts => {
+      postsContainer.innerHTML = "";
+
+      if (posts.length === 0 && currentPage > 1) {
+        currentPage--;
+        return;
+      }
+
+      posts.forEach(post => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <img src="${post.imageUrl}" alt="${post.title}" />
           <div class="card-body">
             <span class="tag">Finance</span>
             <h3>${post.title}</h3>
-            <p>${post.content.substring(0, 100)}...</p>
+            <p>${post.content.substring(0, 120)}...</p>
             <a href="post.html?id=${post._id}" class="btn">See More</a>
           </div>
-        </div>
-      `;
-    });
-  });
+        `;
+
+        postsContainer.appendChild(card);
+      });
+    })
+    .catch(err => console.error("Failed to load posts", err));
+}
+
+// Change page
+function changePage(direction) {
+  currentPage += direction;
+  if (currentPage < 1) currentPage = 1;
+  loadPosts();
+}
+
+// Initial load
+loadPosts();
 </script>
 
 </body>
 </html>
-
