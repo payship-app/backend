@@ -15,6 +15,10 @@ const upload = require("./multer"); // multer configured for Cloudinary
 // Create Express app
 const app = express();
 app.use(cors());
+app.use(express.json());
+
+
+const path = require("path");
 // Serve frontend files
 app.use(express.static(path.join(__dirname, "public")));
 
