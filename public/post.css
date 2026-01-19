@@ -51,11 +51,12 @@ body {
 /* MAIN TEXT STYLING */
 .container p {
   font-size: 1.1rem;
-  line-height: 1.8;       /* SPACE BETWEEN LINES */
+  line-height: 1.5;       /* SPACE BETWEEN LINES */
   margin-bottom: 24px;   /* SPACE BETWEEN PARAGRAPHS */
-  color: #333;
+  color: #fff;
   white-space: pre-line; /* PRESERVES LINE BREAKS */
 }
+
 
 
 
