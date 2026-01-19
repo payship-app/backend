@@ -6,7 +6,7 @@ body {
 }
 
 .container img {
-  width: 100%;
+  width: 50%;
   max-height: 500px;
   object-fit: cover;
   border-radius: 20px;
@@ -17,3 +17,4 @@ body {
   border-top: 1px solid #333;
   padding-top: 20px;
 }
+
